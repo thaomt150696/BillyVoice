@@ -1,0 +1,106 @@
+/* =========================================================
+   BillyVoice – chuyển động và hiệu ứng (D31, gói A + B)
+   Nguồn quyết định: decision-log D31, mô tả ở 06_UI/motion.md.
+   Quy tắc:
+   - Thời lượng và đường cong lấy từ tokens.css (--bv-dur*, --bv-ease*). Màu lấy từ token.
+   - Chỉ chuyển động bằng transform và opacity (và background-color cho vệt nền khoản mới).
+     Ngoại lệ có chủ ý: bv-m-collapse đổi grid-template-rows để thu gọn dòng khi hoàn tác.
+   - Không chuyển động nào che số tiền hoặc ngày; chuyển động một lần không quá 400 ms.
+   - Giảm chuyển động (hệ điều hành hoặc data-motion="reduce"): quãng đường về 0, chỉ còn mờ dần;
+     mọi chuyển động lặp tắt hẳn. Thanh đếm ngược của toast vẫn chạy vì nó là thông tin (còn bao lâu để Hoàn tác).
+   - Opt-in: các hiệu ứng nhấn nút chỉ có tác dụng bên trong .bv-motion.
+   ========================================================= */
+
+:root { --bv-m-dist: 1; }   /* hệ số quãng đường: 1 = đầy đủ, 0 = chỉ mờ dần */
+@media (prefers-reduced-motion: reduce) {
+  :root:not([data-motion="full"]) { --bv-m-dist: 0; }
+  :root:not([data-motion="full"]) :is(.bv-m-loop, .bv-m-billy .bv-m-eyes, .bv-m-billy .bv-m-leaves, .bv-m-billy.is-breathing, .bv-m-billy .bv-m-wave, .bv-m-billy .bv-m-dots circle, .bv-m-ring) { animation: none !important; }
+}
+:root[data-motion="reduce"] { --bv-m-dist: 0; }
+:root[data-motion="reduce"] :is(.bv-m-loop, .bv-m-billy .bv-m-eyes, .bv-m-billy .bv-m-leaves, .bv-m-billy.is-breathing, .bv-m-billy .bv-m-wave, .bv-m-billy .bv-m-dots circle, .bv-m-ring) { animation: none !important; }
+
+/* ---------- Gói A: cơ bản ---------- */
+
+/* A1. Nhấn nút, chip, tab: co nhẹ */
+.bv-motion :is(.bv-btn, .bv-chip, .bv-tab, .bv-mic, .bv-row--link) { transition: transform var(--bv-dur-fast) var(--bv-ease), background-color var(--bv-dur-fast) var(--bv-ease), border-color var(--bv-dur-fast) var(--bv-ease), color var(--bv-dur-fast) var(--bv-ease); }
+.bv-motion :is(.bv-btn, .bv-chip, .bv-tab, .bv-mic, .bv-row--link):active { transform: scale(calc(1 - .03 * var(--bv-m-dist))); }
+
+/* A2. Bảng trượt: nền mờ dần + bảng trượt lên; đóng nhanh hơn mở */
+.bv-m-scrim-in { animation: bv-m-fade var(--bv-dur) var(--bv-ease-out) both; }
+.bv-m-scrim-out { animation: bv-m-fade var(--bv-dur-fast) var(--bv-ease) reverse both; }
+.bv-m-sheet-in { animation: bv-m-up var(--bv-dur) var(--bv-ease-out) both; }
+.bv-m-sheet-out { animation: bv-m-up var(--bv-dur-fast) var(--bv-ease) reverse both; }
+@keyframes bv-m-fade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes bv-m-up { from { opacity: 0; transform: translateY(calc(32px * var(--bv-m-dist))); } to { opacity: 1; transform: none; } }
+
+/* A3. Khoản vừa ghi: dòng trượt vào, nền nhấn nhẹ mờ dần sau 1,5 giây */
+.bv-m-row-new { border-radius: var(--bv-radius-md); padding-left: var(--bv-space-3); padding-right: var(--bv-space-3); margin: 0 calc(-1 * var(--bv-space-3)); border-bottom-color: transparent;
+  animation: bv-m-row-in var(--bv-dur) var(--bv-ease-out) both, bv-m-tint-fade 1500ms var(--bv-ease) var(--bv-dur) both; }
+@keyframes bv-m-row-in { from { opacity: 0; transform: translateY(calc(-12px * var(--bv-m-dist))); } to { opacity: 1; transform: none; } }
+@keyframes bv-m-tint-fade { from { background-color: var(--bv-tint); color: var(--bv-on-tint); } to { background-color: transparent; color: var(--bv-text); } }
+/* Khoản vừa ghi trong app (đã có nền nhấn nhẹ từ .bv-row--new): chỉ thêm chuyển động vào và mờ nền */
+.bv-row--new.bv-m-fresh { animation: bv-m-row-in var(--bv-dur) var(--bv-ease-out) both, bv-m-tint-fade 1500ms var(--bv-ease) var(--bv-dur) both; }
+
+/* A4. Số đếm lên: làm bằng JS (xem motion.html, hàm countTo); giảm chuyển động thì hiện luôn giá trị cuối */
+
+/* A5. Toast: trượt lên + thanh đếm ngược chạy hết thời gian của nút Hoàn tác */
+.bv-m-toast-in { animation: bv-m-up-sm var(--bv-dur) var(--bv-ease-out) both; position: absolute; overflow: hidden; }
+@keyframes bv-m-up-sm { from { opacity: 0; transform: translateY(calc(16px * var(--bv-m-dist))); } to { opacity: 1; transform: none; } }
+.bv-m-countdown { overflow: hidden; }   /* toast đã là position:absolute; thanh đếm ngược nằm sát đáy, cắt theo góc bo */
+.bv-m-countdown::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 3px; background: currentColor; opacity: .55; transform-origin: left; animation: bv-m-shrink var(--bv-dur-toast) linear both; }
+@keyframes bv-m-shrink { from { transform: scaleX(1); } to { transform: scaleX(0); } }
+
+/* A6. Hoàn tác, xóa: dòng thu gọn chiều cao rồi biến mất */
+.bv-m-collapse { display: grid; grid-template-rows: 1fr; transition: grid-template-rows var(--bv-dur) var(--bv-ease), opacity var(--bv-dur) var(--bv-ease); }
+.bv-m-collapse > * { min-height: 0; overflow: hidden; }
+.bv-m-collapse.is-gone { grid-template-rows: 0fr; opacity: 0; }
+
+/* A7. Chuyển kỳ ‹ ›: nội dung trượt ngang theo hướng bấm */
+.bv-m-slide-next { animation: bv-m-slide-next var(--bv-dur-fast) var(--bv-ease-out) both; }
+.bv-m-slide-prev { animation: bv-m-slide-prev var(--bv-dur-fast) var(--bv-ease-out) both; }
+@keyframes bv-m-slide-next { from { opacity: 0; transform: translateX(calc(24px * var(--bv-m-dist))); } to { opacity: 1; transform: none; } }
+@keyframes bv-m-slide-prev { from { opacity: 0; transform: translateX(calc(-24px * var(--bv-m-dist))); } to { opacity: 1; transform: none; } }
+
+/* A8. Biểu đồ Tuần, Tháng: thanh mọc từ 0, mỗi thanh trễ 40 ms; chỉ chạy lần đầu vào màn */
+.bv-m-grow { transform-origin: left; animation: bv-m-grow var(--bv-dur-slow) var(--bv-ease-out) both; animation-delay: calc(var(--i, 0) * 40ms); }
+@keyframes bv-m-grow { from { opacity: 0; transform: scaleX(calc(1 - var(--bv-m-dist))); } to { opacity: 1; transform: none; } }
+
+/* ---------- Gói B: Billy sống động ---------- */
+/* Billy phải là SVG nhúng trực tiếp (không dùng <use> một lớp) để từng bộ phận chuyển động được:
+   .bv-m-leaves = lá, .bv-m-eyes = mắt, .bv-m-wave = tay vẫy, .bv-m-dots = chấm suy nghĩ. */
+.bv-m-billy { display: block; overflow: visible; }
+.bv-mascot--badge.bv-m-billy { overflow: hidden; }
+
+/* B1. Nhàn rỗi: chớp mắt 4–6 giây một lần, lá đung đưa, thân thở rất nhẹ */
+.bv-m-billy .bv-m-eyes { transform-box: fill-box; transform-origin: center; animation: bv-m-blink 5s ease-in-out infinite; }
+.bv-m-billy .bv-m-leaves { transform-origin: 50px 32px; animation: bv-m-sway 3.2s ease-in-out infinite alternate; }
+.bv-m-billy.is-breathing { transform-origin: 50% 100%; animation: bv-m-breathe 3.6s ease-in-out infinite; }
+@keyframes bv-m-blink { 0%, 90%, 100% { transform: scaleY(1); } 94% { transform: scaleY(.1); } }
+@keyframes bv-m-sway { from { transform: rotate(-3deg); } to { transform: rotate(3deg); } }
+@keyframes bv-m-breathe { 0%, 100% { transform: scaleY(1); } 50% { transform: scaleY(1.025); } }
+
+/* B2. Vẫy tay chào (S01): tay lắc 4 lần rồi dừng */
+.bv-m-billy .bv-m-wave { transform-origin: 84px 62px; animation: bv-m-wave 1.1s ease-in-out 4 both; }
+@keyframes bv-m-wave { 0%, 100% { transform: rotate(0); } 30% { transform: rotate(-18deg); } 70% { transform: rotate(8deg); } }
+
+/* B3. Đang xử lý: bong bóng nghĩ nảy lần lượt */
+.bv-m-billy .bv-m-dots circle { transform-box: fill-box; transform-origin: center; animation: bv-m-dot 1.2s ease-in-out infinite; }
+.bv-m-billy .bv-m-dots circle:nth-child(2) { animation-delay: .2s; }
+.bv-m-billy .bv-m-dots circle:nth-child(3) { animation-delay: .4s; }
+@keyframes bv-m-dot { 0%, 100% { opacity: .35; transform: translateY(0); } 40% { opacity: 1; transform: translateY(calc(-3px * var(--bv-m-dist))); } }
+
+/* B4. Ghi xong: Billy nảy một lần cùng toast */
+.bv-m-bounce { animation: bv-m-bounce 600ms var(--bv-ease-spring) both; }
+@keyframes bv-m-bounce { 0% { transform: translateY(0); } 35% { transform: translateY(calc(-14px * var(--bv-m-dist))); } 65% { transform: translateY(0); } 80% { transform: translateY(calc(-5px * var(--bv-m-dist))); } 100% { transform: translateY(0); } }
+
+/* B5. Đổi biểu cảm: mờ chéo giữa hai Billy chồng lên nhau */
+.bv-m-stack { display: grid; }
+.bv-m-stack > * { grid-area: 1 / 1; opacity: 0; transition: opacity var(--bv-dur) var(--bv-ease); }
+.bv-m-stack > .is-on { opacity: 1; }
+
+/* B6. Đang nghe: vòng sóng lan quanh MIC (xem thêm thanh sóng âm chạy bằng JS) */
+.bv-m-micwrap { position: relative; display: inline-grid; place-items: center; }
+.bv-m-ring { position: absolute; inset: 0; border-radius: 50%; border: 2px solid var(--bv-primary); opacity: 0; pointer-events: none; animation: bv-m-ring 1.6s var(--bv-ease-out) infinite; }
+.bv-m-ring:nth-of-type(2) { animation-delay: .8s; }
+@keyframes bv-m-ring { from { opacity: .55; transform: scale(1); } to { opacity: 0; transform: scale(calc(1 + .9 * var(--bv-m-dist))); } }
+.bv-m-bar { display: block; width: 6px; height: 64px; border-radius: 3px; background: var(--bv-primary); transform-origin: center; transform: scaleY(.1); transition: transform 90ms linear; }

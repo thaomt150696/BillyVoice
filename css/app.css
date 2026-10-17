@@ -1,0 +1,16 @@
+/* =========================================================
+   BillyVoice – khung app (phần riêng của app thật, không thuộc thư viện component)
+   Màu, cỡ chữ, khoảng cách: lấy từ tokens.css. Không viết mã màu trực tiếp (D18).
+   ========================================================= */
+html, body { height: 100%; margin: 0; }
+body { background: var(--bv-soft); overscroll-behavior: none; -webkit-text-size-adjust: 100%; -webkit-tap-highlight-color: transparent; }
+button, [role="button"], a, input, select, textarea { touch-action: manipulation; }
+button { font-family: inherit; color: inherit; }
+.bv-shell { height: 100dvh; display: flex; justify-content: center; }
+.bv-shell .bv-app { width: 100%; max-width: 480px; box-shadow: 0 0 0 1px var(--bv-line); padding-top: env(safe-area-inset-top); }
+.bv-app .bv-dock { padding-bottom: env(safe-area-inset-bottom); background: var(--bv-surface); }
+.bv-app .bv-dock .bv-inputbar { background: var(--bv-bg); }
+.bv-skip { position: absolute; top: calc(8px + env(safe-area-inset-top)); right: 8px; z-index: 2; }
+.bv-app .bv-toast { --bv-toast-bottom: calc(176px + env(safe-area-inset-bottom)); }
+@media (min-width: 520px) { .bv-shell .bv-app { border-radius: 0; } }
+@media print { .bv-dock, .bv-toast { display: none; } }

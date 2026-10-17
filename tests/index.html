@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BillyVoice · Kiểm thử bộ phân tích câu</title>
+<style>
+  body { font: 15px/22px system-ui, 'Segoe UI', sans-serif; margin: 0; padding: 24px 16px 80px; color: #2b1f1a; background: #fff8f1; }
+  .w { max-width: 1100px; margin: 0 auto; }
+  h1 { font-size: 24px; margin: 0 0 4px; } p.l { color: #6f5b52; margin: 0 0 16px; }
+  table { border-collapse: collapse; width: 100%; background: #fff; } th, td { border-bottom: 1px solid #eadfd6; padding: 6px 8px; text-align: left; vertical-align: top; font-size: 14px; line-height: 20px; }
+  th { font-size: 12px; text-transform: uppercase; letter-spacing: .04em; color: #6f5b52; } .ok { font-weight: 700; } .no { color: #8a1c0a; font-weight: 700; } code { font-size: 13px; }
+  .sum { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 8px; margin: 16px 0; } .sum div { background: #fff; border: 1px solid #eadfd6; border-radius: 12px; padding: 10px 12px; } .sum b { display: block; font-size: 22px; }
+</style>
+</head>
+<body>
+<div class="w">
+  <h1>Kiểm thử bộ phân tích câu</h1>
+  <p class="l">Chạy bộ phân tích (<code>js/parser.js</code>) trên từng câu trong <code>01_Research/corpus.csv</code> và so với đáp án. Ngưỡng KPI (plan.md §11.4): số tiền ≥ 95% · ngày ≥ 95% · loại ≥ 95% · nhóm ≥ 90%. Câu <code>GD*</code> là dữ liệu giả định (D04), chỉ dùng để thử bộ phân tích, không phải bằng chứng người dùng.</p>
+  <div class="sum" id="sum"></div>
+  <h2>Câu chưa khớp</h2>
+  <table id="fails"></table>
+  <h2>Toàn bộ</h2>
+  <table id="all"></table>
+</div>
+<script src="../js/vn-number.js"></script>
+<script src="../js/categories.js"></script>
+<script src="../js/parser.js"></script>
+<script src="corpus-data.js"></script>
+<script>
+const NAME = {}; BV_DEFAULT_GROUPS.forEach(g => { NAME[g[0]] = g[1]; });
+const TYPE = {spend: 'chi_tieu', income: 'thu_nhap', loan: 'cho_vay', repaid: 'thu_no', transfer: 'chuyen_noi_bo', refund: 'hoan_tien', group: 'chi_ho'};
+const today = new Date(2026, 9, 17);   /* Thứ Bảy 17/10/2026, như các tài liệu */
+const M = {khoan: [0, 0], tien: [0, 0], ngay: [0, 0], loai: [0, 0], nhom: [0, 0], hoi: [0, 0]};
+const tick = (k, ok) => { M[k][1]++; if (ok) M[k][0]++; };
+const rows = [], fails = [];
+BV_CORPUS.forEach(r => {
+  const res = BVParse.parse(r.cau_noi, {today}); const its = res.kind === 'ok' ? res.items : [];
+  const bad = [];
+  const okK = its.length === r.so_khoan; tick('khoan', okK); if (!okK) bad.push('số khoản ' + its.length + '/' + r.so_khoan);
+  for (let i = 0; i < r.so_khoan; i++) {
+    const it = its[i]; const eT = r.loai[i], eN = r.ngay[i], eC = r.danh_muc[i];
+    const aAmt = it ? it.amount : null; const okA = aAmt === r.so_tien[i]; tick('tien', okA); if (!okA) bad.push('tiền #' + (i + 1) + ' ' + aAmt + '/' + r.so_tien[i]);
+    const aN = it ? (it.dateUnsure ? '?' : 'D' + it.date) : null; const okN = aN === eN; tick('ngay', okN); if (!okN) bad.push('ngày #' + (i + 1) + ' ' + aN + '/' + eN);
+    const aT = it ? TYPE[it.type] : null; const okT = aT === eT; tick('loai', okT); if (!okT) bad.push('loại #' + (i + 1) + ' ' + aT + '/' + eT);
+    if (['chi_tieu', 'hoan_tien', 'chi_ho'].includes(eT)) {
+      let aC = it ? (it.ask && it.ask.kind === 'category' ? '?' : NAME[it.group] || it.group) : null; const okC = aC === eC; tick('nhom', okC); if (!okC) bad.push('nhóm #' + (i + 1) + ' ' + aC + '/' + eC);
+    }
+  }
+  const aH = its.some(x => x.ask) ? 'CO' : 'KHONG'; const okH = aH === r.hoi_lai; tick('hoi', okH); if (!okH) bad.push('hỏi lại ' + aH + '/' + r.hoi_lai);
+  const row = {id: r.id, cau: r.cau_noi, ok: bad.length === 0, bad, got: its.map(x => x.amount + ' ' + x.type + ' ' + (x.group || '-') + ' ' + (x.dateUnsure ? '?' : x.date)).join(' | ')};
+  rows.push(row); if (!row.ok) fails.push(row);
+});
+const pct = k => (M[k][1] ? Math.round(M[k][0] / M[k][1] * 1000) / 10 : 0);
+const TH = {tien: 95, ngay: 95, loai: 95, nhom: 90};
+document.getElementById('sum').innerHTML = [['khoan', 'Số khoản đúng (câu)', null], ['tien', 'Số tiền', 95], ['ngay', 'Ngày', 95], ['loai', 'Loại giao dịch', 95], ['nhom', 'Nhóm', 90], ['hoi', 'Hỏi lại đúng (câu)', null]].map(x => `<div>${x[1]}<b>${pct(x[0]).toFixed(1)}%</b>${M[x[0]][0]}/${M[x[0]][1]}${x[2] ? ' · ngưỡng ' + x[2] + '% ' + (pct(x[0]) >= x[2] ? '<span class="ok">đạt</span>' : '<span class="no">chưa đạt</span>') : ''}</div>`).join('') + `<div>Câu khớp hoàn toàn<b>${rows.filter(r => r.ok).length}/${rows.length}</b></div>`;
+const tbl = (el, list) => { document.getElementById(el).innerHTML = '<tr><th>Mã</th><th>Câu nói</th><th>Kết quả</th><th>Chi tiết</th></tr>' + list.map(r => `<tr><td>${r.id}</td><td>${r.cau}</td><td class="${r.ok ? 'ok' : 'no'}">${r.ok ? 'Khớp' : 'Lệch'}</td><td><code>${r.got}</code>${r.bad.length ? '<br>' + r.bad.join('; ') : ''}</td></tr>`).join(''); };
+tbl('fails', fails); tbl('all', rows);
+/* ---- Câu thêm NGOÀI corpus: kiểm xem bộ phân tích có hiểu rộng hơn bộ câu đã dùng để viết luật không ---- */
+const EXTRA = [
+  ['Cà phê 35k', [[35000, 'spend', 'food', 0]]],
+  ['Cà phê 35 nghìn', [[35000, 'spend', 'food', 0]]],
+  ['Grab về nhà 30 nghìn', [[30000, 'spend', 'transport', 0]]],
+  ['Hôm kia đổ xăng 80k', [[80000, 'spend', 'transport', -2]]],
+  ['Thứ ba ăn trưa 60k', [[60000, 'spend', 'food', -4]]],
+  ['Ăn phở 50 nghìn, gửi xe 5 nghìn', [[50000, 'spend', 'food', 0], [5000, 'spend', 'transport', 0]]],
+  ['Bánh mì hai lăm nghìn', [[25000, 'spend', 'food', 0]]],
+  ['Mười nghìn gửi xe', [[10000, 'spend', 'transport', 0]]],
+  ['Mua thuốc 120k', [[120000, 'spend', 'health', 0]]],
+  ['Nạp điện thoại 100k', [[100000, 'spend', 'bills', 0]]],
+  ['Tiền nhà một triệu rưỡi', [[1500000, 'spend', 'bills', 0]]],
+  ['Tiền trọ 2tr5', [[2500000, 'spend', 'bills', 0]]],
+  ['Tiền điện 450 nghìn', [[450000, 'spend', 'bills', 0]]],
+  ['Xem phim 120k', [[120000, 'spend', 'fun', 0]]],
+  ['Lương 15 triệu', [[15000000, 'income', null, 0]]],
+  ['Nhận lương mười lăm triệu', [[15000000, 'income', null, 0]]],
+  ['Mua sách 220 nghìn', [[220000, 'spend', 'education', 0]]],
+  ['Cắt tóc 100k', [[100000, 'spend', 'selfcare', 0]]],
+  ['Hôm qua ăn tối 120 nghìn', [[120000, 'spend', 'food', -1]]],
+  ['Trà sữa 45 ca', [[45000, 'spend', 'food', 0]]],
+  ['Sáng cà phê 30k trưa cơm 45k', [[30000, 'spend', 'food', 0], [45000, 'spend', 'food', 0]]],
+  ['Đi chợ 1.200.000', [[1200000, 'spend', 'food', 0]]],
+  ['Chuyển mẹ 500 nghìn', [[500000, 'spend', 'family', 0]]],
+  ['Mình cho Nam mượn 200k', [[200000, 'loan', null, 0]]],
+  ['Mua đôi giày 450 nghìn', [[450000, 'spend', 'shopping', 0]]],
+  ['Tối nay uống bia 200k', [[200000, 'spend', 'food', 0]]],
+  ['Trà sữa', null],
+  ['Chi cho vụ của Nam', null]
+];
+const xrows = []; let xok = 0;
+EXTRA.forEach(([s, exp]) => {
+  const res = BVParse.parse(s, {today}); const its = res.kind === 'ok' ? res.items : [];
+  let bad = [];
+  if (exp === null) { if (res.kind === 'ok') bad.push('đáng lẽ phải báo thiếu số tiền'); }
+  else {
+    if (its.length !== exp.length) bad.push('số khoản ' + its.length + '/' + exp.length);
+    exp.forEach((e, i) => { const it = its[i]; if (!it) return; if (it.amount !== e[0]) bad.push('tiền ' + it.amount + '/' + e[0]); if (it.type !== e[1]) bad.push('loại ' + it.type + '/' + e[1]); if (e[1] === 'spend' && it.group !== e[2]) bad.push('nhóm ' + it.group + '/' + e[2]); if (it.date !== e[3]) bad.push('ngày ' + it.date + '/' + e[3]); });
+  }
+  const row = {id: 'X' + (xrows.length + 1), cau: s, ok: bad.length === 0, bad, got: its.map(x => x.amount + ' ' + x.type + ' ' + (x.group || '-') + ' ' + x.date + (x.ask ? ' ?' + x.ask.kind : '')).join(' | ') || res.kind};
+  if (row.ok) xok++; xrows.push(row);
+});
+const xs = document.createElement('div'); xs.innerHTML = '<h2>Câu thêm ngoài corpus (' + xok + '/' + xrows.length + ' khớp)</h2><table id="xt"></table>'; document.querySelector('.w').appendChild(xs); tbl('xt', xrows);
+window.__bvExtra = {ok: xok, total: xrows.length, fails: xrows.filter(r => !r.ok).map(r => ({s: r.cau, bad: r.bad, got: r.got}))};
+
+window.__bvTest = {M: Object.fromEntries(Object.keys(M).map(k => [k, pct(k)])), failCount: fails.length, total: rows.length, fails: fails.map(f => ({id: f.id, bad: f.bad, got: f.got}))};
+</script>
+</body>
+</html>

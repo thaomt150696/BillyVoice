@@ -1,0 +1,150 @@
+/* =========================================================
+   BillyVoice – design tokens (Hướng A · Ấm áp)
+   Nguồn quyết định: decision-log D14, D17, D18
+   Quy tắc:
+   - Mọi giá trị màu, cỡ chữ, khoảng cách trong app phải lấy từ file này.
+   - Không viết mã màu trực tiếp trong component.
+   - Màu nhấn chỉ dành cho hành động; KHÔNG dùng để báo lỗi (D18).
+   - Sáng/tối: theo hệ thống, hoặc ép bằng <html data-theme="light|dark">.
+   ========================================================= */
+
+/* ---------- Font ----------
+   Be Vietnam Pro, các độ đậm 400 / 500 / 600 / 700 / 800.
+   Khi build: tải file font về, đặt trong thư mục app và khai báo @font-face
+   (KHÔNG gọi Google Fonts lúc chạy, vì app phải dùng được khi ngoại tuyến).
+   Trong lúc chưa có file font, dùng font hệ thống bên dưới (đều có tiếng Việt). */
+
+:root {
+  /* ----- Chữ ----- */
+  --bv-font: 'Be Vietnam Pro', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+
+  --bv-fs-display: 40px;  --bv-lh-display: 48px;  --bv-fw-display: 800;   /* tổng của kỳ */
+  --bv-fs-title:   24px;  --bv-lh-title:   32px;  --bv-fw-title:   800;   /* tiêu đề màn nhập môn */
+  --bv-fs-head:    20px;  --bv-lh-head:    28px;  --bv-fw-head:    800;   /* câu tóm tắt, tiêu đề bảng trượt */
+  --bv-fs-body:    16px;  --bv-lh-body:    24px;  --bv-fw-body:    400;   /* nội dung */
+  --bv-fs-strong:  16px;  --bv-lh-strong:  24px;  --bv-fw-strong:  600;   /* tên khoản */
+  --bv-fs-call:    14px;  --bv-lh-call:    20px;  --bv-fw-call:    400;   /* mô tả phụ */
+  --bv-fs-cap:     12px;  --bv-lh-cap:     16px;  --bv-fw-cap:     500;   /* nhãn tab, chip, tiêu đề nhóm */
+  --bv-fw-bold: 700;
+
+  /* ----- Khoảng cách: lưới 4px ----- */
+  --bv-space-1: 4px;
+  --bv-space-2: 8px;
+  --bv-space-3: 12px;
+  --bv-space-4: 16px;   /* lề màn hình, khoảng giữa các khối */
+  --bv-space-5: 24px;
+  --bv-space-6: 32px;
+
+  /* ----- Bo góc ----- */
+  --bv-radius-sm: 8px;      /* ô nhỏ */
+  --bv-radius-md: 16px;     /* nút, thẻ nhỏ, ô nhập */
+  --bv-radius-lg: 24px;     /* khối câu trả lời, bảng trượt */
+  --bv-radius-pill: 999px;  /* chip, nhãn, MIC */
+
+  /* ----- Kích thước cố định ----- */
+  --bv-tap: 44px;           /* vùng chạm tối thiểu */
+  --bv-btn-h: 48px;
+  --bv-input-h: 48px;
+  --bv-row-h: 64px;
+  --bv-mic: 64px;
+  --bv-nav-h: 84px;
+  --bv-gutter: 16px;
+
+  /* ----- Chuyển động ----- */
+  --bv-dur-fast: 120ms;
+  --bv-dur: 200ms;
+  --bv-ease: cubic-bezier(.2, .0, .0, 1);
+  --bv-dur-slow: 320ms;      /* biểu đồ mọc, Billy đổi biểu cảm (D31) */
+  --bv-dur-count: 400ms;     /* số đếm lên */
+  --bv-dur-toast: 5000ms;     /* khớp thời gian nút Hoàn tác */
+  --bv-ease-out: cubic-bezier(.16, 1, .3, 1);       /* vào: nhanh rồi chậm lại */
+  --bv-ease-spring: cubic-bezier(.34, 1.56, .64, 1); /* nảy nhẹ, chỉ dành cho Billy */
+
+  /* ----- Lớp xếp chồng ----- */
+  --bv-z-nav: 10;
+  --bv-z-scrim: 30;
+  --bv-z-sheet: 40;
+  --bv-z-toast: 50;
+
+  /* ----- Viền nhấn khi dùng bàn phím ----- */
+  --bv-focus-width: 3px;
+  --bv-focus-offset: 2px;
+}
+
+/* ---------- Màu: SÁNG (mặc định) ---------- */
+:root,
+:root[data-theme="light"] {
+  --bv-bg:          #FFF8F1;  /* nền màn hình */
+  --bv-surface:     #FFFFFF;  /* thẻ, bảng trượt, thanh điều hướng */
+  --bv-soft:        #F6EBE1;  /* nền khối phụ, icon, trích dẫn */
+  --bv-line:        #EADFD6;  /* đường kẻ, viền thẻ */
+  --bv-text:        #2B1F1A;  /* chữ chính */
+  --bv-muted:       #6F5B52;  /* chữ phụ */
+  --bv-primary:     #C2410C;  /* màu nhấn: MIC, nút chính, tab đang chọn */
+  --bv-on-primary:  #FFFFFF;  /* chữ trên màu nhấn */
+  --bv-tint:        #FCE6DA;  /* nền nhấn nhẹ: khối câu trả lời, khoản mới ghi */
+  --bv-on-tint:     #7C2D0A;  /* chữ trên nền nhấn nhẹ */
+  --bv-income:      #1F7A6B;  /* Thu            (kèm ký hiệu + ) */
+  --bv-transfer:    #3F5F9E;  /* Chuyển ví      (kèm ký hiệu ⇄ ) */
+  --bv-loan:        #7A4FA0;  /* Cho mượn       (kèm ký hiệu ↗ ) */
+  --bv-review:      #8A5A00;  /* Cần xem lại    (kèm ký hiệu ? và viền đứt) */
+  --bv-leaf:        #3F7D32;  /* Lá mầm của Billy: CHỈ cho hình minh họa, không mang nghĩa (D29) */
+  --bv-leaf-soft:   #DCEFCB;  /* Nền lá của Billy */
+  --bv-scrim:       rgba(0, 0, 0, .45);
+  --bv-toast-bg:    var(--bv-text);
+  --bv-toast-fg:    var(--bv-bg);
+  --bv-disabled-bg: var(--bv-soft);
+  --bv-disabled-fg: var(--bv-muted);
+  color-scheme: light;
+}
+
+/* ---------- Màu: TỐI (theo hệ thống) ---------- */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bv-bg:          #1A1411;
+    --bv-surface:     #251D19;
+    --bv-soft:        #2F2520;
+    --bv-line:        #3A2E28;
+    --bv-text:        #F7EDE6;
+    --bv-muted:       #C4AEA1;
+    --bv-primary:     #FB8C4C;
+    --bv-on-primary:  #2B1405;
+    --bv-tint:        #4A2A1A;
+    --bv-on-tint:     #FFD9C2;
+    --bv-income:      #5CCBB6;
+    --bv-transfer:    #8FB0F0;
+    --bv-loan:        #C3A3EA;
+    --bv-review:      #F0B94A;
+    --bv-leaf:        #8FD16B;
+    --bv-leaf-soft:   #2F4627;
+    --bv-scrim:       rgba(0, 0, 0, .6);
+    color-scheme: dark;
+  }
+}
+
+/* ---------- Màu: TỐI (ép bằng data-theme) ---------- */
+:root[data-theme="dark"] {
+  --bv-bg:          #1A1411;
+  --bv-surface:     #251D19;
+  --bv-soft:        #2F2520;
+  --bv-line:        #3A2E28;
+  --bv-text:        #F7EDE6;
+  --bv-muted:       #C4AEA1;
+  --bv-primary:     #FB8C4C;
+  --bv-on-primary:  #2B1405;
+  --bv-tint:        #4A2A1A;
+  --bv-on-tint:     #FFD9C2;
+  --bv-income:      #5CCBB6;
+  --bv-transfer:    #8FB0F0;
+  --bv-loan:        #C3A3EA;
+  --bv-review:      #F0B94A;
+  --bv-leaf:        #8FD16B;
+  --bv-leaf-soft:   #2F4627;
+  --bv-scrim:       rgba(0, 0, 0, .6);
+  color-scheme: dark;
+}
+
+/* ---------- Giảm chuyển động ---------- */
+@media (prefers-reduced-motion: reduce) {
+  :root { --bv-dur-fast: 0ms; --bv-dur: 0ms; --bv-dur-slow: 0ms; --bv-dur-count: 0ms; }
+}
